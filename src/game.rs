@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-
 pub struct GameSession {
 	pub code: String,
 	pub players: HashMap<String, Player>,

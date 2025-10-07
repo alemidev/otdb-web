@@ -1,3 +1,5 @@
+use serde::Deserialize;
+
 pub const API_PATH: &str = "https://opentdb.com/api.php";
 pub const API_CATEGORIES: &str = "https://opentdb.com/api_category.php";
 
@@ -43,14 +45,12 @@ pub enum ApiEncoding {
 	Base64,
 }
 
-
-
-#[derive(serde::Deserialize)]
+#[derive(Deserialize, serde::Serialize)]
 pub struct ApiCategoriesList {
 	pub trivia_categories: Vec<ApiCategory>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize, serde::Serialize)]
 pub struct ApiCategory {
 	pub id: u32,
 	pub name: String,
@@ -107,7 +107,10 @@ mod test {
 
 		let json = serde_json::to_string(&q).expect("failed serializing query");
 
-		assert_eq!(json, r#"{"amount":10,"token":"asd","command":"request","category":1,"difficulty":"medium","type":"multiple","encode":"base64"}"#);
+		assert_eq!(
+			json,
+			r#"{"amount":10,"token":"asd","command":"request","category":1,"difficulty":"medium","type":"multiple","encode":"base64"}"#
+		);
 	}
 
 	#[test]
@@ -130,8 +133,8 @@ mod test {
 			]
 		}"#;
 
-		let parsed: super::ApiResponse = serde_json::from_str(response)
-			.expect("failed deserializing response");
+		let parsed: super::ApiResponse =
+			serde_json::from_str(response).expect("failed deserializing response");
 
 		assert_eq!(parsed.response_code, super::ApiResponseCode::Success);
 	}
