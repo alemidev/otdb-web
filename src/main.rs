@@ -1,4 +1,5 @@
 mod api;
+mod game;
 
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
