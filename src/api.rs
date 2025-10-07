@@ -45,24 +45,24 @@ pub enum ApiEncoding {
 	Base64,
 }
 
-#[derive(Deserialize, serde::Serialize)]
+#[derive(Deserialize, serde::Serialize, Clone)]
 pub struct ApiCategoriesList {
 	pub trivia_categories: Vec<ApiCategory>,
 }
 
-#[derive(Deserialize, serde::Serialize)]
+#[derive(Deserialize, serde::Serialize, Clone)]
 pub struct ApiCategory {
 	pub id: u32,
 	pub name: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize, serde::Serialize)]
 pub struct ApiResponse {
 	pub response_code: ApiResponseCode,
 	pub results: Vec<ApiResponseQuestion>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize, serde::Serialize)]
 pub struct ApiResponseQuestion {
 	#[serde(rename = "type")]
 	pub kind: QuestionType,
@@ -73,7 +73,7 @@ pub struct ApiResponseQuestion {
 	pub incorrect_answers: Vec<String>,
 }
 
-#[derive(serde_repr::Deserialize_repr, Debug, PartialEq, Eq)]
+#[derive(serde_repr::Deserialize_repr, Debug, PartialEq, Eq, serde::Serialize)]
 #[repr(u8)]
 pub enum ApiResponseCode {
 	/// Returned results successfully.
