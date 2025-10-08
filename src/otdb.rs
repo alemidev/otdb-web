@@ -1,7 +1,5 @@
-use serde::Deserialize;
-
 pub const API_PATH: &str = "https://opentdb.com/api.php";
-pub const API_CATEGORIES: &str = "https://opentdb.com/api_category.php";
+pub const API_CATEGORIES_PATH: &str = "https://opentdb.com/api_category.php";
 
 #[derive(serde::Serialize)]
 pub struct ApiQuery {
@@ -45,24 +43,24 @@ pub enum ApiEncoding {
 	Base64,
 }
 
-#[derive(Deserialize, serde::Serialize, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Clone)]
 pub struct ApiCategoriesList {
 	pub trivia_categories: Vec<ApiCategory>,
 }
 
-#[derive(Deserialize, serde::Serialize, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Clone)]
 pub struct ApiCategory {
 	pub id: u32,
 	pub name: String,
 }
 
-#[derive(Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize)]
 pub struct ApiResponse {
 	pub response_code: ApiResponseCode,
 	pub results: Vec<ApiResponseQuestion>,
 }
 
-#[derive(Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize)]
 pub struct ApiResponseQuestion {
 	#[serde(rename = "type")]
 	pub kind: QuestionType,

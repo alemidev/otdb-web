@@ -1,92 +1,57 @@
 mod api;
 mod game;
+mod otdb;
 
-use crate::api::{API_CATEGORIES, ApiCategoriesList, API_PATH};
-use axum::{Json, Router, response::IntoResponse, routing::get,extract::{State}};
-use std::sync::Arc;
-use reqwest::Url;
-use tokio::sync::RwLock;
-use crate::game::GameOptions;
+use clap::Parser;
 
-struct AppState {
-	categories: RwLock<ApiCategoriesList>,
+/// otdb-web -- online multiplayer trivia game, powered by opentriviadb
+#[derive(Parser)]
+struct Cli {
+	/// address to bind backend on
+	#[arg(long, short, default_value = "127.0.0.1:8040")]
+	addr: String,
+
+	/// number of worker threads to spawn for the runtime
+	#[arg(long, default_value_t = 4)]
+	threads: usize,
+	
+	/// enable debug logging
+	#[arg(long, default_value_t = false)]
+	debug: bool,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), reqwest::Error> {
-	let categories = match fetch_categories().await {
-		Ok(list) => {
-			println!("Loaded {} categories.", list.trivia_categories.len());
-			list
-		}
-		Err(err) => {
-			eprintln!("Failed to fetch categories: {err}");
-			std::process::exit(1);
-		}
-	};
+fn main() {
+	let args = Cli::parse();
 
-	let app_state = Arc::new(AppState {
-		categories: RwLock::new(categories),
-	});
+	tracing_subscriber::fmt()
+		.compact()
+		.with_max_level(if args.debug { tracing::Level::DEBUG } else { tracing::Level::INFO })
+		.init();
 
-	let app = Router::new()
-		.route("/categories", get(get_categories))
-		//.route("/questions", post(get_questions))
-		.with_state(app_state);
+	let rt = tokio::runtime::Builder::new_multi_thread()
+		.enable_io()
+		.worker_threads(args.threads)
+		.thread_name("otdb-web-worker")
+		.build()
+		.expect("could not build runtime");
 
-	let addr = "0.0.0.0:80";
-	let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-	println!("Server running on http://{}", addr);
-	axum::serve(listener, app).await.unwrap();
+	if let Err(e) = rt.block_on(run(args)) {
+		tracing::error!("exception running otdb-web: {e}");
+		std::process::exit(1);
+	}
+}
+
+async fn run(args: Cli) -> Result<(), Box<dyn std::error::Error>> {
+	let categories: otdb::ApiCategoriesList = reqwest::get(otdb::API_CATEGORIES_PATH)
+		.await?
+		.error_for_status()?
+		.json()
+		.await?;
+
+	let state = game::GameState::new(categories);
+
+	api::serve(args.addr, state).await?;
 
 	Ok(())
 }
 
-async fn fetch_categories() -> Result<ApiCategoriesList, reqwest::Error> {
-	let resp = reqwest::get(API_CATEGORIES)
-		.await?
-		.error_for_status()?
-		.json::<ApiCategoriesList>()
-		.await?;
-	Ok(resp)
-}
-
-async fn get_categories(State(state): State<Arc<AppState>>) -> impl IntoResponse {
-	let categories = state.categories.read().await;
-	Json(categories.clone())
-}
-async fn get_questions(
-	State(_): State<Arc<AppState>>,
-	Json(options): Json<GameOptions>,
-){
-	let mut url = Url::parse(API_PATH).unwrap();
-	{
-		let mut query = url.query_pairs_mut();
-		query.append_pair("amount", &options.amount.to_string());
-
-		if let Some(cat) = options.category {
-			query.append_pair("category", &cat.to_string());
-		}
-
-		if let Some(diff) = &options.difficulty {
-			let diff_str = match diff {
-				api::QuestionDifficulty::Easy => "easy",
-				api::QuestionDifficulty::Medium => "medium",
-				api::QuestionDifficulty::Hard => "hard",
-			};
-			query.append_pair("difficulty", diff_str);
-		}
-
-		if let Some(kind) = &options.kind {
-			let kind_str = match kind {
-				api::QuestionType::Multiple => "multiple",
-				api::QuestionType::Boolean => "boolean",
-			};
-			query.append_pair("type", kind_str);
-		}
-	}
-
-	println!("Request to: {url}");
-
-	let response = reqwest::get(url).await;
-}
