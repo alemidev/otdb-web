@@ -3,8 +3,7 @@ mod error;
 mod categories;
 mod questions;
 
-
-use axum::{routing::get, Router};
+use axum::{Router, routing::get};
 
 pub async fn serve(addr: String, state: crate::game::GameState) -> Result<(), std::io::Error> {
 	tracing::info!("serving backend on {addr}");

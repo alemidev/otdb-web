@@ -24,4 +24,3 @@ pub async fn get(
 
 	Ok(Json(question))
 }
-

@@ -20,7 +20,7 @@ pub enum ApiCommand {
 	Reset,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum QuestionDifficulty {
 	Easy,
@@ -28,7 +28,7 @@ pub enum QuestionDifficulty {
 	Hard,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum QuestionType {
 	Multiple,
